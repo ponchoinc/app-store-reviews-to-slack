@@ -9,6 +9,8 @@ const rp = require('request-promise');
 
 process.env.TZ = 'UTC';
 
+
+/** SimpleDB config */
 AWS.config.setPromisesDependency(Promise);
 const db = new AWS.SimpleDB({
   region: process.env.AWS_REGION || 'us-west-2',
@@ -18,7 +20,7 @@ const db = new AWS.SimpleDB({
 const DomainName = process.env.AWS_SIMPLEDB_DOMAIN || 'AppReviews';
 
 
-/** AWS export */
+/** AWS export function */
 exports.handler = function AppReviews(event, context) {
   const androidAppId = (event && event.androidAppId) || process.env.ANDROID_APP_ID;
   const iosAppId = (event && event.iosAppId) || process.env.IOS_APP_ID;
@@ -198,7 +200,7 @@ exports.handler = function AppReviews(event, context) {
   };
 
 
-  /** EXECUTE CODE --- */
+  /** --- EXECUTE CODE --- */
   const fn = (appFn => appFn && appFn.call());
   return db.createDomain({ DomainName }).promise().catch(() => false).then(() =>
     Promise.mapSeries([
