@@ -1,0 +1,36 @@
+{
+  "name": "app_reviews",
+  "description": "Post iOS and Android reviews to Slack",
+  "keywords": [],
+  "version": "0.0.1",
+  "main": "index.js",
+  "dependencies": {
+    "aws-sdk": "^2.82.0",
+    "bluebird": "^3.4.7",
+    "moment": "^2.18.1",
+    "request": "^2.79.0",
+    "request-promise": "^4.1.1",
+    "xml2js": "^0.4.17"
+  },
+  "engineStrict": true,
+  "devDependencies": {
+    "dotenv": "^4.0.0",
+    "eslint": "^4.1.1",
+    "eslint-config-airbnb-base": "^11.2.0",
+    "eslint-plugin-import": "^2.7.0"
+  },
+  "homepage": "",
+  "contributors": [
+    {
+      "name": "Greg Leuch",
+      "email": "greg@poncho.is",
+      "url": "https://gleu.ch"
+    }
+  ],
+  "scripts": {
+    "setup": "node setup.js",
+    "test": "node test.js",
+    "zip": "npm install --only=production; rm -rf app-reviews.zip && zip -r -X app-reviews.zip index.js node_modules; npm install"
+  },
+  "private": true
+}
