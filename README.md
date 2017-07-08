@@ -1,8 +1,9 @@
-# Slack App Reviews
+# App Store Reviews to Slack
 
 Post the latest iOS and Android app reviews to your Slack team.
 
 Requires AWS Lambda, AWS Cloudwatch Scheduler, and AWS SimpleDB.
+
 
 
 ## Setup
@@ -64,6 +65,17 @@ When testing locally, you can add these to a `.env` file that will load using `d
 You can setup your .ENV file or export the necessay ENV vars to test locally and run `npm test`.
 
 If you need to reset your SimpleDB domain, you can run `node reset.js`.
+
+
+## TODO
+
+- [x] Framework setup using SimpleDB and request-promise
+- [x] iOS app store recent reviews
+- [x] iOS app store ratings
+- [ ] Android app store recent reviews
+- [ ] Android app store ratings
+- [ ] Detailed README.md information
+- [ ] Tag v1.0.0 & make ZIP for Lambda use
 
 
 ## Credits
