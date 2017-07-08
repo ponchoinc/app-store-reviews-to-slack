@@ -1,5 +1,6 @@
 'use strict';
 
+// eslint-disable-next-line import/no-extraneous-dependencies
 const AWS = require('aws-sdk');
 const moment = require('moment');
 const parseString = require('xml2js').parseString;
@@ -10,15 +11,15 @@ process.env.TZ = 'UTC';
 
 AWS.config.setPromisesDependency(Promise);
 const db = new AWS.SimpleDB({
-  region: 'us-west-2',
-  endpoint: 'https://sdb.us-west-2.amazonaws.com',
+  region: process.env.AWS_REGION || 'us-west-2',
+  endpoint: process.env.AWS_SIMPLEDB_ENDPOINT || 'https://sdb.us-west-2.amazonaws.com',
 });
 
-const DomainName = 'AppReviews';
+const DomainName = process.env.AWS_SIMPLEDB_DOMAIN || 'AppReviews';
 
 
 /** AWS export */
-exports.handler = function Lambda(event, context) {
+exports.handler = function AppReviews(event, context) {
   const androidAppId = (event && event.androidAppId) || process.env.ANDROID_APP_ID;
   const iosAppId = (event && event.iosAppId) || process.env.IOS_APP_ID;
   const slackWebhookUrl = (event && event.slackWebhookUrl) || process.env.SLACK_WEBHOOK_URL;
