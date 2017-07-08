@@ -117,7 +117,7 @@ exports.handler = function AppReviews(event, context) {
     const ItemName = 'IosReviewId';
     const attrName = 'LastReviewId';
     const color = '#5DA5FB';
-    const url = `http://itunes.apple.com/rss/customerreviews/id=${iosAppId}/xml`;
+    const url = `https://itunes.apple.com/rss/customerreviews/id=${iosAppId}/xml`;
     const attachments = [];
 
     return dbGetValue(ItemName, attrName).then((lastId = 0) =>
@@ -161,7 +161,7 @@ exports.handler = function AppReviews(event, context) {
   const iosRatings = () => {
     const ItemName = 'IosReviewId';
     const attrName = 'LastReviewCount';
-    const url = `http://itunes.apple.com/lookup?id=${iosAppId}`;
+    const url = `https://itunes.apple.com/lookup?id=${iosAppId}`;
 
     return dbGetValue(ItemName, attrName).then((lastCount = 0) =>
       rp.get(url).then((data) => {
@@ -209,8 +209,8 @@ exports.handler = function AppReviews(event, context) {
       iosAppId && (() => iosRatings()),
 
       /* Android ratings */
-      androidAppId && androidRatings(),
       androidAppId && androidReviews(),
+      androidAppId && androidRatings(),
     ], fn)
       .then(() => context.done(null, ''))
       .catch(err => context.done(err, '')));
