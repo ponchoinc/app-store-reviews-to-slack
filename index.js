@@ -37,11 +37,21 @@ exports.handler = function AppReviews(event, context) {
       if (resp.Items && resp.Items.length) {
         const item = resp.Items[0];
         if (item.Name === itemName && item.Attributes && item.Attributes.length) {
-          item.Attributes.forEach((attr) => {
-            if (attr.Name === attrName && attr.Value) {
-              val = attr.Value;
-            }
-          });
+          // DEBUG
+          // eslint-disable-next-line no-console
+          console.log('item.Attributes', JSON.stringify(item.Attributes, null, 2));
+          const attrs = item.Attributes.filter(attr => (
+            attr.Name === attrName && attr.Value
+          )).map(attr => (
+            Object.assign({}, attr, { Value: parseInt(attr.Value, 10) })
+          )).sort((a, b) => (
+            // to get last, reverse and get first
+            b.Value - a.Value
+          ));
+          val = attrs[0].Value;
+          // DEBUG
+          // eslint-disable-next-line no-console
+          console.log('attrs', JSON.stringify(attrs, null, 2));
         }
       }
       return val;
@@ -128,14 +138,19 @@ exports.handler = function AppReviews(event, context) {
               reject(err);
             }
 
+            // DEBUG
+            // eslint-disable-next-line no-console
+            console.log('lastId', lastId);
+
             let newestId = lastId || 0;
             result.feed.entry.shift();
             result.feed.entry.forEach((entry) => {
               const updated = moment(entry.updated[0]);
               const { stars } = starRating(parseInt(entry['im:rating'][0], 10));
-              newestId = Math.max(entry.id[0], newestId);
+              const entryId = parseInt(entry.id[0], 10);
+              newestId = Math.max(entryId, newestId);
 
-              if (entry.id[0] > (lastId || 0)) {
+              if (entryId > (lastId || 0)) {
                 attachments.push({
                   fallback: `${stars} - ${entry.title[0]}`,
                   color,
@@ -143,7 +158,7 @@ exports.handler = function AppReviews(event, context) {
                   title_link: entry.author[0].uri[0],
                   text: entry.content[0]._,
                   footer: `v${entry['im:version'][0]}  | ${entry.author[0].name[0]}`,
-                  ts: parseInt(updated.valueOf() / 1000, 10),
+                  ts: updated.unix(),
                 });
               }
             });
