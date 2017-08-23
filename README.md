@@ -8,7 +8,6 @@ Requires AWS Lambda, AWS Cloudwatch Scheduler, and AWS SimpleDB.
 
 ## Setup
 
-
 #### Obtaining Slack Incoming Webhook URL
 
 ...
@@ -20,6 +19,8 @@ Requires AWS Lambda, AWS Cloudwatch Scheduler, and AWS SimpleDB.
 
 
 #### AWS Lambda
+
+Depending on which countries you fetch iOS reviews from, you should ensure your lambda function timeout is set rather high. _(Suggested: 30 sec)_
 
 The Lambda user will need to have SimpleDB IAM permissions to access the specified DomainName. 
 
@@ -45,6 +46,8 @@ To generate a ZIP file to upload to Lambda, run `npm run zip`.
 
 ## Configuration
 
+#### Environmental Variables
+
 You should specify the following ENV variables when creating your Lambda function.
 
 | Name | Default Value | Description |
@@ -58,6 +61,11 @@ You should specify the following ENV variables when creating your Lambda functio
 
 
 When testing locally, you can add these to a `.env` file that will load using `dotenv` module.
+
+
+#### Configurable Options
+
+For iOS, you can specify the list of countries to fetch in `config.js` by adding the ISO 3166-1 alpha-2 code into the `iosCountries` array.
 
 
 ## Testing

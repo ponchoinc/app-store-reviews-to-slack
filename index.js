@@ -2,10 +2,13 @@
 
 // eslint-disable-next-line import/no-extraneous-dependencies
 const AWS = require('aws-sdk');
+const countries = require('countries-list').countries;
 const moment = require('moment');
 const parseString = require('xml2js').parseString;
 const Promise = require('bluebird');
 const rp = require('request-promise');
+
+const { iosCountries } = require('./config.js');
 
 process.env.TZ = 'UTC';
 
@@ -37,9 +40,6 @@ exports.handler = function AppReviews(event, context) {
       if (resp.Items && resp.Items.length) {
         const item = resp.Items[0];
         if (item.Name === itemName && item.Attributes && item.Attributes.length) {
-          // DEBUG
-          // eslint-disable-next-line no-console
-          console.log('item.Attributes', JSON.stringify(item.Attributes, null, 2));
           const attrs = item.Attributes.filter(attr => (
             attr.Name === attrName && attr.Value
           )).map(attr => (
@@ -49,9 +49,6 @@ exports.handler = function AppReviews(event, context) {
             b.Value - a.Value
           ));
           val = attrs[0].Value;
-          // DEBUG
-          // eslint-disable-next-line no-console
-          console.log('attrs', JSON.stringify(attrs, null, 2));
         }
       }
       return val;
@@ -124,80 +121,96 @@ exports.handler = function AppReviews(event, context) {
 
   /** --- iOS --- */
   const iosReviews = () => {
-    const ItemName = 'IosReviewId';
     const attrName = 'LastReviewId';
     const color = '#5DA5FB';
-    const url = `https://itunes.apple.com/rss/customerreviews/id=${iosAppId}/xml`;
     const attachments = [];
 
-    return dbGetValue(ItemName, attrName).then((lastId = 0) =>
-      rp.get(url).then(data =>
-        new Promise((resolve, reject) => {
-          parseString(data, (err, result) => {
-            if (err) {
-              reject(err);
-            }
+    /** Iterate through all specified countries, with concurrency */
+    return Promise.mapSeries(iosCountries, (code) => {
+      const country = countries[code];
+      const ItemName = `IosReviewId-${code}`;
+      const url = `https://itunes.apple.com/${code}/rss/customerreviews/id=${iosAppId}/xml`;
 
-            // DEBUG
-            // eslint-disable-next-line no-console
-            console.log('lastId', lastId);
-
-            let newestId = lastId || 0;
-            result.feed.entry.shift();
-            result.feed.entry.forEach((entry) => {
-              const updated = moment(entry.updated[0]);
-              const { stars } = starRating(parseInt(entry['im:rating'][0], 10));
-              const entryId = parseInt(entry.id[0], 10);
-              newestId = Math.max(entryId, newestId);
-
-              if (entryId > (lastId || 0)) {
-                attachments.push({
-                  fallback: `${stars} - ${entry.title[0]}`,
-                  color,
-                  title: `${stars} - ${entry.title[0]}`,
-                  title_link: entry.author[0].uri[0],
-                  text: entry.content[0]._,
-                  footer: `v${entry['im:version'][0]}  | ${entry.author[0].name[0]}`,
-                  ts: updated.unix(),
-                });
+      return dbGetValue(ItemName, attrName).then((lastId = 0) =>
+        rp.get(url).then(data =>
+          new Promise((resolve, reject) => {
+            parseString(data, (err, result) => {
+              if (err || !result.feed || !result.feed.entry) {
+                reject(err || 'No feed entries');
               }
-            });
 
-            return dbPutValue(ItemName, attrName, newestId).then(resolve);
-          });
-        }).then(() => {
-          if (attachments.length) {
-            return postAttachmentsToSlack(attachments.reverse(), { username: 'iOS Reviews' });
-          }
-          return false;
-        })));
+              let newestId = lastId || 0;
+              result.feed.entry.shift();
+              result.feed.entry.forEach((entry) => {
+                const updated = moment(entry.updated[0]);
+                const { stars } = starRating(parseInt(entry['im:rating'][0], 10));
+                const entryId = parseInt(entry.id[0], 10);
+                newestId = Math.max(entryId, newestId);
+
+                if (entryId > (lastId || 0)) {
+                  attachments.push({
+                    fallback: `${stars} - ${entry.title[0]}`,
+                    color,
+                    title: `${stars} - ${entry.title[0]}`,
+                    title_link: entry.author[0].uri[0],
+                    text: entry.content[0]._,
+                    footer: `v${entry['im:version'][0]}  |  ${country.emoji} ${country.name}  |  ${entry.author[0].name[0]}`,
+                    ts: updated.unix(),
+                  });
+                }
+              });
+
+              return dbPutValue(ItemName, attrName, newestId).then(resolve);
+            });
+          }))).catch(() => false);
+    }, { concurrency: 15 }).then(() => {
+      if (attachments.length) {
+        return postAttachmentsToSlack(attachments.reverse(), { username: 'iOS Reviews' });
+      }
+      return false;
+    });
   };
 
   const iosRatings = () => {
-    const ItemName = 'IosReviewId';
     const attrName = 'LastReviewCount';
-    const url = `https://itunes.apple.com/lookup?id=${iosAppId}`;
 
-    return dbGetValue(ItemName, attrName).then((lastCount = 0) =>
-      rp.get(url).then((data) => {
-        const results = JSON.parse(data).results[0];
-        const text = [];
-        const currentCount = results.userRatingCount;
+    /** Iterate through all specified countries, with concurrency */
+    return Promise.mapSeries(iosCountries, (code) => {
+      const country = countries[code];
+      const ItemName = `IosReviewId-${code}`;
+      const url = `https://itunes.apple.com/lookup?id=${iosAppId}&country=${code}`;
 
-        // Current version
-        const currentRating = starRating(results.averageUserRatingForCurrentVersion);
-        text.push(`Current iOS version (${results.version}) is rated ${currentRating.stars} (${results.averageUserRatingForCurrentVersion}) among ${results.userRatingCountForCurrentVersion} reviewers.`);
+      return dbGetValue(ItemName, attrName).then((lastCount = 0) =>
+        rp.get(url).then((data) => {
+          const results = JSON.parse(data).results[0];
+          const text = [];
+          const currentCount = results.userRatingCount;
 
-        // All versions
-        const allRatings = starRating(results.averageUserRating);
-        text.push(`Overall iOS app is rated ${allRatings.stars} (${results.averageUserRating}) among ${currentCount} reviewers.`);
+          if (!currentCount || !results.averageUserRatingForCurrentVersion) {
+            return false;
+          }
 
-        if (currentCount > (lastCount || 0)) {
-          return dbPutValue(ItemName, attrName, currentCount).then(() =>
-            postTextToSlack(text.join('\n'), { username: 'iOS Reviews' }));
-        }
-        return false;
-      }));
+          // Heading
+          text.push(`${country.emoji} *${country.name}*`);
+
+          // Current version
+          const currentRating = starRating(results.averageUserRatingForCurrentVersion);
+          text.push(`Current iOS version (${results.version}) is rated ${currentRating.stars} (${results.averageUserRatingForCurrentVersion}) among ${results.userRatingCountForCurrentVersion} reviewers.`);
+
+          // All versions
+          const allRatings = starRating(results.averageUserRating);
+          text.push(`Overall iOS app is rated ${allRatings.stars} (${results.averageUserRating}) among ${currentCount} reviewers.`);
+
+          if (currentCount > (lastCount || 0)) {
+            return dbPutValue(ItemName, attrName, currentCount).then(() => text.join('\n'));
+          }
+          return false;
+        }).catch(() => false));
+    }, { concurrency: 15 }).then((items) => {
+      const groups = arrayGroupings(items.filter(Boolean), 5);
+      return Promise.mapSeries(groups, text =>
+        postTextToSlack(text.join('\n'), { username: 'iOS Reviews' }));
+    });
   };
 
 
@@ -226,7 +239,7 @@ exports.handler = function AppReviews(event, context) {
       /* Android ratings */
       androidAppId && androidReviews(),
       androidAppId && androidRatings(),
-    ], fn)
+    ], fn, { concurrency: 4 })
       .then(() => context.done(null, ''))
       .catch(err => context.done(err, '')));
 };

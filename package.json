@@ -2,10 +2,11 @@
   "name": "app_reviews",
   "description": "Post iOS and Android reviews to Slack",
   "keywords": [],
-  "version": "0.0.1",
+  "version": "0.0.3",
   "main": "index.js",
   "dependencies": {
     "bluebird": "^3.4.7",
+    "countries-list": "^2.0.0",
     "moment": "^2.18.1",
     "request": "^2.79.0",
     "request-promise": "^4.1.1",
@@ -28,9 +29,8 @@
     }
   ],
   "scripts": {
-    "setup": "node setup.js",
     "test": "node test.js",
-    "zip": "npm install --only=production; rm -rf app-reviews.zip && zip -r -X app-reviews.zip index.js node_modules; npm install"
+    "zip": "rm -rf node_modules; npm install --only=production; rm -rf app-reviews.zip && zip -r -X app-reviews.zip index.js node_modules; npm install"
   },
   "private": true
 }
