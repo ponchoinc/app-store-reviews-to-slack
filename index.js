@@ -184,9 +184,9 @@ exports.handler = function AppReviews(event, context) {
         rp.get(url).then((data) => {
           const results = JSON.parse(data).results[0];
           const text = [];
-          const currentCount = results.userRatingCount;
+          const count = results.userRatingCount || results.userRatingCountForCurrentVersion;
 
-          if (!currentCount || !results.averageUserRatingForCurrentVersion) {
+          if (!results.averageUserRatingForCurrentVersion && !results.averageUserRating) {
             return false;
           }
 
@@ -194,15 +194,23 @@ exports.handler = function AppReviews(event, context) {
           text.push(`${country.emoji} *${country.name}*`);
 
           // Current version
-          const currentRating = starRating(results.averageUserRatingForCurrentVersion);
-          text.push(`> Current iOS version (${results.version}) is rated ${currentRating.stars} (${results.averageUserRatingForCurrentVersion}) among ${results.userRatingCountForCurrentVersion} reviewers.`);
+          if (results.averageUserRatingForCurrentVersion) {
+            const currentRating = starRating(results.averageUserRatingForCurrentVersion);
+            text.push(`> Current iOS version (${results.version}) is rated ${currentRating.stars} (${results.averageUserRatingForCurrentVersion}) among ${results.userRatingCountForCurrentVersion} reviewers.`);
+          } else {
+            text.push('> Current iOS version has not received enough reviews for a rating.');
+          }
 
           // All versions
-          const allRatings = starRating(results.averageUserRating);
-          text.push(`> Overall iOS app is rated ${allRatings.stars} (${results.averageUserRating}) among ${currentCount} reviewers.`);
+          if (results.averageUserRating) {
+            const allRatings = starRating(results.averageUserRating);
+            text.push(`> Overall iOS app is rated ${allRatings.stars} (${results.averageUserRating}) among ${count} reviewers.`);
+          } else {
+            text.push('> Overall iOS app has not received enough reviews for a rating.');
+          }
 
-          if (currentCount > (lastCount || 0)) {
-            return dbPutValue(ItemName, attrName, currentCount).then(() => text.join('\n'));
+          if (count > (lastCount || 0)) {
+            return dbPutValue(ItemName, attrName, count).then(() => text.join('\n'));
           }
           return false;
         }).catch(() => false));

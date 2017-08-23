@@ -20,7 +20,7 @@ Requires AWS Lambda, AWS Cloudwatch Scheduler, and AWS SimpleDB.
 
 #### AWS Lambda
 
-Depending on which countries you fetch iOS reviews from, you should ensure your lambda function timeout is set rather high. _(Suggested: 30 sec)_
+Depending on which countries you fetch iOS reviews from, you should ensure your lambda function timeout is set rather high. _(Suggested: 90 sec @ 256MB)_
 
 The Lambda user will need to have SimpleDB IAM permissions to access the specified DomainName. 
 
