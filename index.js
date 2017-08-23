@@ -195,11 +195,11 @@ exports.handler = function AppReviews(event, context) {
 
           // Current version
           const currentRating = starRating(results.averageUserRatingForCurrentVersion);
-          text.push(`Current iOS version (${results.version}) is rated ${currentRating.stars} (${results.averageUserRatingForCurrentVersion}) among ${results.userRatingCountForCurrentVersion} reviewers.`);
+          text.push(`> Current iOS version (${results.version}) is rated ${currentRating.stars} (${results.averageUserRatingForCurrentVersion}) among ${results.userRatingCountForCurrentVersion} reviewers.`);
 
           // All versions
           const allRatings = starRating(results.averageUserRating);
-          text.push(`Overall iOS app is rated ${allRatings.stars} (${results.averageUserRating}) among ${currentCount} reviewers.`);
+          text.push(`> Overall iOS app is rated ${allRatings.stars} (${results.averageUserRating}) among ${currentCount} reviewers.`);
 
           if (currentCount > (lastCount || 0)) {
             return dbPutValue(ItemName, attrName, currentCount).then(() => text.join('\n'));
@@ -209,7 +209,7 @@ exports.handler = function AppReviews(event, context) {
     }, { concurrency: 15 }).then((items) => {
       const groups = arrayGroupings(items.filter(Boolean), 5);
       return Promise.mapSeries(groups, text =>
-        postTextToSlack(text.join('\n'), { username: 'iOS Reviews' }));
+        postTextToSlack(text.join('\n'), { username: 'iOS Reviews', mrkdwn: true }));
     });
   };
 

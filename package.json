@@ -30,7 +30,7 @@
   ],
   "scripts": {
     "test": "node test.js",
-    "zip": "rm -rf node_modules; npm install --only=production; rm -rf app-reviews.zip && zip -r -X app-reviews.zip index.js node_modules; npm install"
+    "zip": "rm -rf node_modules; npm install --only=production; rm -rf app-reviews.zip && zip -r -X app-reviews.zip index.js config.js node_modules; npm install"
   },
   "private": true
 }
